@@ -9,6 +9,8 @@ import { ProvenanceService } from '../provenance/provenance.service';
 import { SPEC_VERSION, SpecPanel } from '../semantic/spec';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { Org } from '../auth/org.decorator';
+import { UsageService } from "./usage.service"
+
 
 type Q = { id: string; panelId: string; sql: string; params: unknown[]; rows: unknown[] };
 
@@ -21,6 +23,7 @@ export class GenerationController {
     private specBuilder: SpecBuilderService,
     private prov: ProvenanceService,
     private cfg: ConfigService,
+    private usage: UsageService
   ) {}
 
   @Post('generate')
@@ -39,7 +42,7 @@ export class GenerationController {
     });
 
     const limit = Number(this.cfg.get('DAILY_GENERATION_LIMIT') ?? 50);
-    if ((await this.prov.countToday(orgId)) >= limit)
+    if (!(await this.usage.check(orgId, limit)))
       throw new HttpException(
         'Daily generation limit reached for this organization.',
         HttpStatus.TOO_MANY_REQUESTS,
@@ -90,7 +93,7 @@ export class GenerationController {
           runId, orgId, prompt: question, plan,
           spec: { specVersion: SPEC_VERSION, title: plan.title, panels },
           model: this.cfg.get('GEMINI_MODEL') ?? '', attempts, latencyMs, queries,
-        });
+        });this.usage.record(orgId);
       } catch (e) {
         console.error('provenance save failed', e);
         send('warning', { message: 'Dashboard is shown, but its data trail could not be saved.' });

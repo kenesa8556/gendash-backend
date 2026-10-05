@@ -100,7 +100,7 @@ async function api(method, path, body, opts = {}) {
       console.error('Usage: node scripts/dev.js query <queryId>');
       process.exit(1);
     }
-    const { status, json } = await api('GET', `/dev/queries/${id}`, undefined, opts);
+    const { status, json } = await api('GET', `/queries/${id}`, undefined, opts);
     console.log(status, JSON.stringify(json, null, 2));
     return;
   }

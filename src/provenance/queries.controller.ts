@@ -3,7 +3,7 @@ import { ProvenanceService } from './provenance.service';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { Org } from '../auth/org.decorator';
 
-@Controller('dev/queries')
+@Controller('queries')
 @UseGuards(SupabaseAuthGuard)
 export class QueriesController {
   constructor(private prov: ProvenanceService) {}
