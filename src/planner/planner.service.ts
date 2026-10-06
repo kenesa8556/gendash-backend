@@ -54,12 +54,14 @@ Allowed dimensions: ${Object.keys(DIMENSIONS).join(' | ')}
 Allowed filter op: eq | in`;
   }
 
-  async plan(question: string): Promise<{ plan: Plan; attempts: number }> {
+  async plan(question: string, previous?: Plan): Promise<{ plan: Plan; attempts: number }> {
     let lastError = '';
+    const base = previous
+      ? `<current_plan>${JSON.stringify(previous)}</current_plan>\n<change_request>${question}</change_request>\nApply the change request to the current plan. Keep every panel and setting the user did not mention. Return the complete updated plan.`
+      : `<question>${question}</question>`;
     for (let attempt = 1; attempt <= 2; attempt++) {
       const contents =
-        `<question>${question}</question>` +
-        (lastError ? `\nYour previous answer was invalid: ${lastError}. Fix it.` : '');
+        base + (lastError ? `\nYour previous answer was invalid: ${lastError}. Fix it.` : '');
       const res = await this.ai.models.generateContent({
         model: this.model,
         contents,

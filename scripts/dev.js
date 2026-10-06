@@ -122,7 +122,10 @@ async function api(method, path, body, opts = {}) {
         'x-org-id': opts.org || need('TEST_ORG_ID'),
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ question }),
+            body: JSON.stringify({
+        question,
+        dashboardId: args.find((a) => a.startsWith('--dashboard='))?.slice(12),
+      }),
     });
     console.log('status', r.status);
     const reader = r.body.getReader();
@@ -143,6 +146,29 @@ async function api(method, path, body, opts = {}) {
     }
     return;
   }
+
+
+
+  if (cmd === 'save') {
+    const { status, json } = await api('POST', '/dashboards', { runId: rest[0] }, opts);
+    console.log(status, JSON.stringify(json, null, 2));
+    return;
+  }
+  if (cmd === 'dashboards') {
+    const { status, json } = await api('GET', '/dashboards', undefined, opts);
+    console.log(status, JSON.stringify(json, null, 2));
+    return;
+  }
+  if (cmd === 'dashboard') {
+    const { status, json } = await api('GET', `/dashboards/${rest[0]}`, undefined, opts);
+    if (status !== 200) return console.log(status, JSON.stringify(json));
+    console.log(`v${json.version} "${json.title}"`);
+    for (const p of json.spec.panels)
+      console.log(`- ${p.label} (${(json.data[p.queryId] ?? []).length} rows)`);
+    return;
+  }
+
+
 
 
   console.log('Commands: token | ask "<question>" [--raw|--noauth|--org=<uuid>] | query <queryId>');
