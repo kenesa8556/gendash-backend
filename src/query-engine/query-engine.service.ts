@@ -62,7 +62,9 @@ export class QueryEngineService {
       where.push(`sold_at >= $${params.length}`);
     }
 
-    const metricSql = panel.metrics.map((m) => `${METRICS[m].sql} as ${m}`).join(', ');
+    const metricSql =
+                     panel.metrics.map((m) => `${METRICS[m].sql} as ${m}`).join(', ') +
+                (panel.dimension ? '' : ', count(*) as _rows'); // lets us detect "no matching rows" for KPIs
     const dim = panel.dimension ? DIMENSIONS[panel.dimension].sql : null;
     const brk = panel.breakdown ? DIMENSIONS[panel.breakdown].sql : null;
     const first = panel.metrics[0];
@@ -78,14 +80,18 @@ export class QueryEngineService {
   }
 
   async run(orgId: string, panel: Panel) {
-    const anchor = await this.getAnchor(orgId);
-    const { sql, params } = this.build(orgId, panel, anchor);
-    const res = await this.pool.query(sql, params);
-    const rows = res.rows.map((r) => {
-      const out: Record<string, unknown> = { ...r };
-      for (const m of panel.metrics) out[m] = Number(r[m]);
-      return out;
-    });
-    return { sql, params, rowCount: res.rowCount, rows };
+      const anchor = await this.getAnchor(orgId);
+      const { sql, params } = this.build(orgId, panel, anchor);
+      const res = await this.pool.query(sql, params);
+      // an aggregate with no GROUP BY always returns one row, even when nothing matched
+      const raw = panel.dimension
+        ? res.rows
+        : res.rows.filter((r) => Number(r._rows) > 0).map(({ _rows, ...rest }) => rest);
+      const rows = raw.map((r) => {
+        const out: Record<string, unknown> = { ...r };
+        for (const m of panel.metrics) out[m] = Number(r[m]);
+        return out;
+      });
+      return { sql, params, rowCount: rows.length, rows };
   }
 }
