@@ -13,6 +13,7 @@ import { Plan } from '../semantic/plan';
 import { SPEC_VERSION, SpecPanel } from '../semantic/spec';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { Org } from '../auth/org.decorator';
+import { OrgContextService } from '../organizations/org-context.service';
 
 type Q = { id: string; panelId: string; sql: string; params: unknown[]; rows: unknown[] };
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -27,6 +28,7 @@ export class GenerationController {
     private prov: ProvenanceService,
     private dashboards: DashboardsService,
     private cfg: ConfigService,
+    private orgCtx: OrgContextService,
   ) {}
 
   @Post('generate')
@@ -75,7 +77,8 @@ export class GenerationController {
     const runId = randomUUID();
     try {
       send('status', { stage: 'planning' });
-      const { plan, attempts } = await this.planner.plan(question, previous?.plan);
+            const ctx = await this.orgCtx.get(orgId);
+      const { plan, attempts } = await this.planner.plan(question, ctx, previous?.plan);
       if (aborted) return;
       send('plan', { runId, title: plan.title, panelCount: plan.panels.length });
 
@@ -85,7 +88,7 @@ export class GenerationController {
       await Promise.all(
         plan.panels.map(async (p, i) => {
           const r = await this.engine.run(orgId, p);
-          const sp = this.specBuilder.build(`p${i + 1}`, p, r.rows, anchor);
+          const sp = this.specBuilder.build(`p${i + 1}`, p, r.rows, anchor, ctx.currency);
           panels.push(sp);
           queries.push({ id: sp.queryId, panelId: sp.id, sql: r.sql, params: r.params, rows: r.rows });
           send('panel', { panel: sp, rows: r.rows });

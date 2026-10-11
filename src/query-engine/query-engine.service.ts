@@ -79,6 +79,10 @@ export class QueryEngineService {
     return { sql, params };
   }
 
+    async raw(sql: string, params: unknown[] = []) {
+    return (await this.pool.query(sql, params)).rows;
+  }
+
   async run(orgId: string, panel: Panel) {
       const anchor = await this.getAnchor(orgId);
       const { sql, params } = this.build(orgId, panel, anchor);

@@ -1,5 +1,5 @@
 export const METRICS = {
-  revenue: { label: 'Revenue (ETB)', sql: 'sum(amount)', format: 'currency' },
+  revenue: { label: 'Revenue', sql: 'sum(amount)', format: 'currency' },
   orders:  { label: 'Orders',        sql: 'count(*)',    format: 'number' },
   units:   { label: 'Units sold',    sql: 'sum(qty)',    format: 'number' },
 } as const;

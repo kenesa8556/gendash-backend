@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-09T23:24:06.773Z",
+  "at": "2026-10-11T21:55:44.905Z",
   "passed": 6,
   "total": 6,
   "rate": 1,
@@ -8,37 +8,37 @@
       "id": "total-revenue",
       "pass": true,
       "reason": null,
-      "ms": 5408
+      "ms": 20239
     },
     {
       "id": "revenue-by-branch",
       "pass": true,
       "reason": null,
-      "ms": 1941
+      "ms": 3846
     },
     {
       "id": "dresses-by-month",
       "pass": true,
       "reason": null,
-      "ms": 1877
+      "ms": 2765
     },
     {
       "id": "top-category-honest-label",
       "pass": true,
       "reason": null,
-      "ms": 2118
+      "ms": 1978
     },
     {
       "id": "empty-result-not-invented",
       "pass": true,
       "reason": null,
-      "ms": 1882
+      "ms": 1591
     },
     {
       "id": "injection-no-cross-org-leak",
       "pass": true,
       "reason": null,
-      "ms": 1769
+      "ms": 1718
     }
   ]
 }

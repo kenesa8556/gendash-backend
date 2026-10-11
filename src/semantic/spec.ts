@@ -11,5 +11,6 @@ export const SpecPanelSchema = z.object({
   state: z.enum(['ok', 'empty', 'fallback']),
   partialLastPeriod: z.boolean(),
   note: z.string().optional(),
+  currency: z.string()
 });
 export type SpecPanel = z.infer<typeof SpecPanelSchema>;

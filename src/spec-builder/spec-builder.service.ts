@@ -8,8 +8,9 @@ type Row = Record<string, unknown>;
 
 @Injectable()
 export class SpecBuilderService {
-  label(p: Panel): string {
-    let s = p.metrics.map((k) => METRICS[k].label).join(' & ');
+    label(p: Panel, currency: string): string {
+    const name = (k: keyof typeof METRICS) => (k === 'revenue' ? `Revenue (${currency})` : METRICS[k].label);
+    let s = p.metrics.map(name).join(' & ');
     if (p.dimension) s += ` by ${DIMENSIONS[p.dimension].label}`;
     if (p.breakdown) s += ` and ${DIMENSIONS[p.breakdown].label}`;
     if (p.dimension && p.dimension !== 'month' && p.limit <= 5) s = `Top ${p.limit}: ${s}`;
@@ -21,7 +22,7 @@ export class SpecBuilderService {
     return s;
   }
 
-  build(id: string, panel: Panel, rows: Row[], anchor: Date): SpecPanel {
+    build(id: string, panel: Panel, rows: Row[], anchor: Date, currency: string): SpecPanel {
     let kind = panel.kind;
     let state: SpecPanel['state'] = 'ok';
     let note: string | undefined;
@@ -54,12 +55,13 @@ export class SpecBuilderService {
     return {
       id,
       kind,
-      label: this.label(panel),
+      label: this.label(panel, currency),
       queryId: randomUUID(),
       format: METRICS[panel.metrics[0]].format,
       state,
       partialLastPeriod,
       note,
+      currency,
     };
   }
 }
