@@ -36,6 +36,9 @@ async function fetchRetry(url: string, init: RequestInit, tries = 4): Promise<Re
   }
 }
 
+  
+    
+
 async function login(): Promise<string> {
   const r = await fetchRetry(`${need('SUPABASE_URL')}/auth/v1/token?grant_type=password`, {
     method: 'POST',
@@ -185,6 +188,12 @@ const CASES: Case[] = [
 ];
 
 async function main() {
+  try {
+    await fetch(`${BASE}/semantic`);
+  } catch {
+    console.error(`Backend not reachable at ${BASE}. Start it with: npm run start:dev`);
+    process.exit(2);
+  }
   const pool = new Pool({
     connectionString: need('DATABASE_URL'),
     ssl: { rejectUnauthorized: false },
@@ -199,6 +208,11 @@ async function main() {
       r = await generate(token, c.question);
     } catch (e: any) {
       r = { status: 0, error: e.message, panels: [], raw: '', ms: 0 };
+    }
+
+        if (r.status === 0) {
+      console.error(`ERROR ${c.id}: backend unreachable (${r.error}). Not counted as a pass or a fail.`);
+      process.exit(2);
     }
     const reason = r.error && !c.allowError ? `request failed: ${r.error}` : await c.check(r, q);
     console.log(`${reason ? 'FAIL' : 'PASS'}  ${c.id}  (${(r.ms / 1000).toFixed(1)}s)`);

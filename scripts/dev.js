@@ -44,13 +44,14 @@ async function token() {
 }
 
 async function api(method, path, body, opts = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+    const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+  const headers = isForm ? {} : { 'Content-Type': 'application/json' };
   if (!opts.noauth) headers.Authorization = `Bearer ${await token()}`;
   headers['x-org-id'] = opts.org || need('TEST_ORG_ID');
   const r = await fetchRetry(BASE + path, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   });
   const text = await r.text();
   let json;
@@ -167,6 +168,52 @@ async function api(method, path, body, opts = {}) {
       console.log(`- ${p.label} (${(json.data[p.queryId] ?? []).length} rows)`);
     return;
   }
+
+
+
+
+
+  if (cmd === 'import-preview' || cmd === 'import') {
+    const fs = require('fs');
+    const path = require('path');
+    const file = rest[0];
+    const mk = () => {
+      const f = new FormData();
+      f.append('file', new Blob([fs.readFileSync(file)]), path.basename(file));
+      return f;
+    };
+    const flag = (n, d) => args.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d;
+    if (cmd === 'import-preview') {
+      const { status, json } = await api('POST', '/imports/preview', mk(), opts);
+      console.log(status, JSON.stringify(json, null, 2));
+      return;
+    }
+    // no --map given: use the server's own suggestion
+    const pv = await api('POST', '/imports/preview', mk(), opts);
+    if (pv.status !== 200 && pv.status !== 201) return console.log(pv.status, JSON.stringify(pv.json));
+    let mapping = pv.json.mapping;
+    const m = flag('map');
+    if (m) mapping = Object.fromEntries(m.split(',').map((p) => [p.split(':')[0], Number(p.split(':')[1])]));
+    const f = mk();
+    f.append('mapping', JSON.stringify(mapping));
+    f.append('mode', flag('mode', 'append'));
+    f.append('dateOrder', flag('dateOrder', pv.json.dateOrder));
+    if (args.includes('--dry')) f.append('dryRun', 'true');
+    const { status, json } = await api('POST', '/imports', f, opts);
+    console.log(status, JSON.stringify(json, null, 2));
+    return;
+  }
+  if (cmd === 'imports') {
+    const { status, json } = await api('GET', '/imports', undefined, opts);
+    console.log(status, JSON.stringify(json, null, 2));
+    return;
+  }
+  if (cmd === 'delete-import') {
+    const { status, json } = await api('DELETE', `/imports/${rest[0]}`, undefined, opts);
+    console.log(status, JSON.stringify(json));
+    return;
+  }
+
 
 
 

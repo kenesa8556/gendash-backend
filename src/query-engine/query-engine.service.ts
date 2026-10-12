@@ -34,6 +34,9 @@ export class QueryEngineService {
     }
     return a;
   }
+    forget(orgId: string) {
+    this.anchors.delete(orgId);
+  }
 
   build(orgId: string, panel: Panel, anchor: Date) {
     const params: unknown[] = [orgId];
