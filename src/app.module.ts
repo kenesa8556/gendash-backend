@@ -7,6 +7,7 @@ import { SemanticModule } from './semantic/semantic.module';
 import { QueryEngineModule } from './query-engine/query-engine.module';
 import { GenerationModule } from './generation/generation.module';
 import { ImportsModule } from './imports/imports.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), 
@@ -15,7 +16,8 @@ import { ImportsModule } from './imports/imports.module';
     ProvenanceModule,
     GenerationModule,
     ImportsModule,
-    SemanticModule
+    SemanticModule,
+    OrganizationsModule,
   ],
   controllers: [HealthController],
 })

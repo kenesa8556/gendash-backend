@@ -217,6 +217,19 @@ async function api(method, path, body, opts = {}) {
 
 
 
+    if (cmd === 'me') {
+    const { status, json } = await api('GET', '/me', undefined, opts);
+    console.log(status, JSON.stringify(json, null, 2));
+    return;
+  }
+  if (cmd === 'create-org') {
+    const { status, json } = await api('POST', '/organizations', { name: rest[0], currency: rest[1] ?? 'ETB' }, opts);
+    console.log(status, JSON.stringify(json));
+    return;
+  }
+
+
+
 
   console.log('Commands: token | ask "<question>" [--raw|--noauth|--org=<uuid>] | query <queryId>');
 })().catch((e) => {
