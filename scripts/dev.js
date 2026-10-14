@@ -30,11 +30,16 @@ async function fetchRetry(url, init, tries = 3) {
   }
 }
 
+function creds() {
+  const p = process.argv.includes('--user=2') ? 'TEST2_' : 'TEST_';
+  return { email: need(p + 'EMAIL'), password: need(p + 'PASSWORD'), org: process.env[p + 'ORG_ID'] };
+}
+
 async function token() {
   const r = await fetchRetry(`${need('SUPABASE_URL')}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey: need('SUPABASE_ANON_KEY'), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: need('TEST_EMAIL'), password: need('TEST_PASSWORD') }),
+    body: JSON.stringify({ email: creds().email, password: creds().password }),
   });
   const j = await r.json();
     if (!j.access_token) {
@@ -47,7 +52,7 @@ async function api(method, path, body, opts = {}) {
     const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const headers = isForm ? {} : { 'Content-Type': 'application/json' };
   if (!opts.noauth) headers.Authorization = `Bearer ${await token()}`;
-  headers['x-org-id'] = opts.org || need('TEST_ORG_ID');
+  if (opts.org || creds().org) headers['x-org-id'] = opts.org || creds().org;
   const r = await fetchRetry(BASE + path, {
     method,
     headers,
@@ -120,7 +125,7 @@ async function api(method, path, body, opts = {}) {
       signal: ac.signal,
       headers: {
         Authorization: `Bearer ${t}`,
-        'x-org-id': opts.org || need('TEST_ORG_ID'),
+        'x-org-id': opts.org || creds().org,
         'Content-Type': 'application/json',
       },
             body: JSON.stringify({
@@ -228,6 +233,21 @@ async function api(method, path, body, opts = {}) {
     return;
   }
 
+
+
+
+
+    const call = async (m, p, b) => {
+    const { status, json } = await api(m, p, b, opts);
+    console.log(status, JSON.stringify(json, null, 2));
+  };
+  if (cmd === 'members') return call('GET', '/members');
+  if (cmd === 'invitations') return call('GET', '/invitations');
+  if (cmd === 'invite') return call('POST', '/invitations', { email: rest[0] });
+  if (cmd === 'revoke') return call('DELETE', `/invitations/${rest[0]}`);
+  if (cmd === 'respond') return call('POST', `/invitations/${rest[0]}/respond`, { accept: rest[1] === 'accept' });
+  if (cmd === 'set-role') return call('PUT', `/members/${rest[0]}`, { role: rest[1] });
+  if (cmd === 'remove-member') return call('DELETE', `/members/${rest[0]}`);
 
 
 

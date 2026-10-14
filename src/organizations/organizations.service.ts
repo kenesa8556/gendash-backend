@@ -23,7 +23,23 @@ export class OrganizationsService {
       name: (m.organizations?.name ?? '') as string,
       currency: (m.organizations?.currency ?? 'ETB') as string,
     }));
-    return { user, memberships, invitations: [] as unknown[] }; // invitations arrive in B2
+
+
+    const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
+    const { data: inv, error: e2 } = await this.sb
+      .from('invitations')
+      .select('id, role, invited_by_email, created_at, organizations(name)')
+      .eq('email', user.email).eq('status', 'pending').gte('created_at', since)
+      .order('created_at', { ascending: false });
+    if (e2) throw new Error(e2.message);
+    const invitations = (inv ?? []).map((i: any) => ({
+      id: i.id as string,
+      role: i.role as string,
+      orgName: (i.organizations?.name ?? '') as string,
+      invitedBy: (i.invited_by_email ?? '') as string,
+      createdAt: i.created_at as string,
+    }));
+    return { user, memberships, invitations };
   }
 
   async create(user: User, body: { name?: string; currency?: string }) {

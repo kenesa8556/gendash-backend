@@ -8,6 +8,7 @@ import { QueryEngineModule } from './query-engine/query-engine.module';
 import { GenerationModule } from './generation/generation.module';
 import { ImportsModule } from './imports/imports.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { MembersModule} from './members/members.module'
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), 
@@ -18,6 +19,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
     ImportsModule,
     SemanticModule,
     OrganizationsModule,
+    MembersModule,
   ],
   controllers: [HealthController],
 })
