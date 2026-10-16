@@ -29,11 +29,11 @@ export class ImportsController {
   }
 
   
-  @Post('preview')
+    @Post('preview')
   @UseInterceptors(upload)
-  preview(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
+  preview(@Req() req: any, @UploadedFile() file: Express.Multer.File, @Body() body: { sheet?: string }) {
     ownerOnly(req);
-    return this.svc.preview(file);
+    return this.svc.preview(file, body?.sheet);
   }
 
   @Post()

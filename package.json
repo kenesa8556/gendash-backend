@@ -28,6 +28,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@supabase/supabase-js": "^2.117.2",
     "dotenv": "^18.0.5",
+    "exceljs": "^4.4.0",
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

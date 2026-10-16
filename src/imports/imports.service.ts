@@ -7,6 +7,7 @@ import { OrgContextService } from '../organizations/org-context.service';
 import { readCsv } from './csv';
 import { Mapping, MappingSchema, suggestMapping } from './mapping';
 import { detectDateOrder, validateRows } from './normalize';
+import { readXlsx, XlsxError } from './xlsx';
 
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_IMPORT_ROWS = 50_000;
@@ -20,23 +21,28 @@ export class ImportsService {
     private orgCtx: OrgContextService,
   ) {}
 
-  private read(file?: Express.Multer.File) {
+   private async read(file?: Express.Multer.File, sheet?: string) {
     if (!file) throw new BadRequestException('file required');
-    if (!/\.csv$/i.test(file.originalname))
-      throw new BadRequestException(
-        /\.xlsx$/i.test(file.originalname)
-          ? 'Excel (.xlsx) support is coming soon. For now, save your sheet as CSV and upload that.'
-          : 'Only .csv files are supported.',
-      );
-    const { headers, rows } = readCsv(file.buffer);
-    if (!rows.length) throw new BadRequestException('The file has no data rows.');
-    if (rows.length > MAX_IMPORT_ROWS)
+    const name = file.originalname;
+    let parsed: { headers: string[]; rows: string[][]; sheets?: string[]; sheet?: string };
+    if (/\.csv$/i.test(name)) parsed = readCsv(file.buffer);
+    else if (/\.xlsx$/i.test(name)) {
+      try {
+        parsed = await readXlsx(file.buffer, sheet);
+      } catch (e) {
+        throw new BadRequestException(
+          e instanceof XlsxError ? e.message : 'Could not read this Excel file. Try saving it again as .xlsx or CSV.',
+        );
+      }
+    } else throw new BadRequestException('Only .xlsx and .csv files are supported.');
+    if (!parsed.rows.length) throw new BadRequestException('The file has no data rows.');
+    if (parsed.rows.length > MAX_IMPORT_ROWS)
       throw new BadRequestException(`Too many rows (max ${MAX_IMPORT_ROWS}). Split the file.`);
-    return { headers, rows };
+    return parsed;
   }
 
-  preview(file?: Express.Multer.File) {
-    const { headers, rows } = this.read(file);
+  async preview(file?: Express.Multer.File, sheet?: string) {
+    const { headers, rows, sheets, sheet: used } = await this.read(file, sheet);
     const mapping = suggestMapping(headers);
     const dates = mapping.date != null ? rows.map((r) => r[mapping.date!] ?? '') : [];
     const o = detectDateOrder(dates);
@@ -49,6 +55,8 @@ export class ImportsService {
       missingRequired: (['date', 'amount'] as const).filter((k) => mapping[k] == null),
       dateOrder: o.order,
       dateOrderAmbiguous: o.ambiguous,
+      sheets: sheets ?? [],
+      sheet: used ?? '',
     };
   }
 
@@ -56,9 +64,9 @@ export class ImportsService {
     orgId: string,
     userId: string,
     file: Express.Multer.File | undefined,
-    body: { mapping?: string; mode?: string; dateOrder?: string; dryRun?: string },
+    body: { mapping?: string; mode?: string; dateOrder?: string; dryRun?: string; sheet?: string },
   ) {
-    const { headers, rows } = this.read(file);
+    const { headers, rows } = await this.read(file, body.sheet);
 
     let mapping: Mapping;
     try {

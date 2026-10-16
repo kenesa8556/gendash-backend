@@ -67,11 +67,16 @@ const clean = (s: string) => s.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\
 
 export function validateRows(rows: string[][], m: Mapping, order: Order) {
   const valid: SalesRow[] = [];
-  const issues: { line: number; reason: string }[] = [];
+  const issues: { line: number; reason: string; text: string }[] = [];
   const reasons: Record<string, number> = {};
-  const skip = (i: number, reason: string) => {
+    const skip = (i: number, reason: string) => {
     reasons[reason] = (reasons[reason] ?? 0) + 1;
-    if (issues.length < 30) issues.push({ line: i + 2, reason }); // +2: header is line 1
+    if (issues.length < 30)
+      issues.push({
+        line: i + 2,
+        reason,
+        text: rows[i].map((x) => String(x ?? '').trim()).filter(Boolean).slice(0, 4).join(' · ').slice(0, 80),
+      });
   };
 
   rows.forEach((r, i) => {
