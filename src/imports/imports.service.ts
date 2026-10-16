@@ -1,6 +1,7 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable,ConflictException, NotFoundException } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE } from '../supabase/supabase.module';
+import { sampleRows } from './sample';
 import { QueryEngineService } from '../query-engine/query-engine.service';
 import { OrgContextService } from '../organizations/org-context.service';
 import { readCsv } from './csv';
@@ -132,6 +133,37 @@ export class ImportsService {
       .eq('org_id', orgId).order('created_at', { ascending: false }).limit(50);
     if (error) throw new Error(error.message);
     return data;
+  }
+
+    async status(orgId: string) {
+    const { count, error } = await this.sb
+      .from('sales').select('id', { count: 'exact', head: true }).eq('org_id', orgId);
+    if (error) throw new Error(error.message);
+    return { rows: count ?? 0 };
+  }
+
+  async sample(orgId: string, userId: string) {
+    if ((await this.status(orgId)).rows > 0)
+      throw new ConflictException('This shop already has data. Delete it first to load the sample.');
+    const rows = sampleRows();
+    const { data: imp, error: e1 } = await this.sb.from('imports').insert({
+      org_id: orgId, filename: 'sample-data', rows_total: rows.length, rows_imported: rows.length,
+      rows_skipped: 0, mapping: {}, mode: 'sample', created_by: userId,
+    }).select('id').single();
+    if (e1) throw new Error(e1.message);
+    try {
+      for (let i = 0; i < rows.length; i += 1000) {
+        const batch = rows.slice(i, i + 1000).map((v) => ({ ...v, org_id: orgId, import_id: imp.id }));
+        const { error } = await this.sb.from('sales').insert(batch);
+        if (error) throw new Error(error.message);
+      }
+    } catch (e) {
+      await this.sb.from('imports').delete().eq('id', imp.id); // cascade removes partial rows
+      throw e;
+    }
+    this.engine.forget(orgId);
+    this.orgCtx.invalidate(orgId);
+    return { importId: imp.id as string, rowsImported: rows.length };
   }
 
   async remove(orgId: string, id: string) {

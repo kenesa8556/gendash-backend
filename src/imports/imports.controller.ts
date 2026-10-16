@@ -17,6 +17,18 @@ const ownerOnly = (req: any) => {
 export class ImportsController {
   constructor(private svc: ImportsService) {}
 
+    @Get('status')
+  status(@Org() orgId: string) {
+    return this.svc.status(orgId);
+  }
+
+  @Post('sample')
+  sample(@Org() orgId: string, @Req() req: any) {
+    ownerOnly(req);
+    return this.svc.sample(orgId, req.user.id);
+  }
+
+  
   @Post('preview')
   @UseInterceptors(upload)
   preview(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
