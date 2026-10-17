@@ -1,44 +1,121 @@
 {
-  "at": "2026-10-16T02:04:31.079Z",
-  "passed": 6,
-  "total": 6,
+  "at": "2026-10-17T00:34:23.733Z",
+  "repeat": 1,
+  "passed": 16,
+  "total": 16,
   "rate": 1,
   "results": [
     {
       "id": "total-revenue",
+      "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 8273
+      "ms": 17793
     },
     {
       "id": "revenue-by-branch",
+      "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 2021
+      "ms": 2283
     },
     {
       "id": "dresses-by-month",
+      "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 1992
+      "ms": 2546
     },
     {
       "id": "top-category-honest-label",
+      "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 1558
+      "ms": 1797
     },
     {
       "id": "empty-result-not-invented",
+      "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 1660
+      "ms": 1707
     },
     {
       "id": "injection-no-cross-org-leak",
+      "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 1985
+      "ms": 2002
+    },
+    {
+      "id": "other-org-isolation",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 5606
+    },
+    {
+      "id": "imported-csv-total",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 4570
+    },
+    {
+      "id": "imported-messy-xlsx-by-branch",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 4586
+    },
+    {
+      "id": "unsupported-metric-honest-label",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 1582
+    },
+    {
+      "id": "vague-question-labelled",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 2047
+    },
+    {
+      "id": "refine-keeps-panels",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 9805
+    },
+    {
+      "id": "injection-variants",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 13727
+    },
+    {
+      "id": "member-cannot-import",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 908
+    },
+    {
+      "id": "member-cannot-invite",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 470
+    },
+    {
+      "id": "non-member-blocked",
+      "run": 1,
+      "pass": true,
+      "reason": null,
+      "ms": 417
     }
   ]
 }
