@@ -5,6 +5,16 @@ import { METRICS, DIMENSIONS } from '../semantic/semantic';
 import { PlanSchema, Plan } from '../semantic/plan';
 import type { OrgContext } from '../organizations/org-context.service';
 
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let t: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, rej) => {
+    t = setTimeout(() => rej(new Error('PLANNER_TIMEOUT')), ms);
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(t));
+}
+
+
 @Injectable()
 export class PlannerService {
   private ai: GoogleGenAI;
@@ -57,15 +67,27 @@ Allowed filter op: eq | in`;
       : `<question>${question}</question>`;
     for (let attempt = 1; attempt <= 2; attempt++) {
       const contents = base + (lastError ? `\nYour previous answer was invalid: ${lastError}. Fix it.` : '');
-      const res = await this.ai.models.generateContent({
-        model: this.model,
-        contents,
-        config: {
-          systemInstruction: this.systemPrompt(ctx),
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      });
+            const call = () =>
+        withTimeout(
+          this.ai.models.generateContent({
+            model: this.model,
+            contents,
+            config: {
+              systemInstruction: this.systemPrompt(ctx),
+              responseMimeType: 'application/json',
+              temperature: 0.2,
+            },
+          }),
+          25_000,
+        );
+      let res;
+      try {
+        res = await call();
+      } catch (e: any) {
+        if (Number(e?.status) !== 503) throw e;
+        await new Promise((r) => setTimeout(r, 1500)); // transient overload: one more try
+        res = await call();
+      }
       try {
         const parsed = PlanSchema.safeParse(JSON.parse(res.text ?? ''));
         if (parsed.success) return { plan: parsed.data, attempts: attempt };

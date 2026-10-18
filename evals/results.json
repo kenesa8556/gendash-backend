@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-17T00:34:23.733Z",
+  "at": "2026-10-18T00:16:17.303Z",
   "repeat": 1,
   "passed": 16,
   "total": 16,
@@ -10,112 +10,112 @@
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 17793
+      "ms": 7036
     },
     {
       "id": "revenue-by-branch",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 2283
+      "ms": 2651
     },
     {
       "id": "dresses-by-month",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 2546
+      "ms": 3115
     },
     {
       "id": "top-category-honest-label",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 1797
+      "ms": 2644
     },
     {
       "id": "empty-result-not-invented",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 1707
+      "ms": 4510
     },
     {
       "id": "injection-no-cross-org-leak",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 2002
+      "ms": 3287
     },
     {
       "id": "other-org-isolation",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 5606
+      "ms": 5687
     },
     {
       "id": "imported-csv-total",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 4570
+      "ms": 5186
     },
     {
       "id": "imported-messy-xlsx-by-branch",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 4586
+      "ms": 5240
     },
     {
       "id": "unsupported-metric-honest-label",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 1582
+      "ms": 1940
     },
     {
       "id": "vague-question-labelled",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 2047
+      "ms": 2260
     },
     {
       "id": "refine-keeps-panels",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 9805
+      "ms": 11535
     },
     {
       "id": "injection-variants",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 13727
+      "ms": 12083
     },
     {
       "id": "member-cannot-import",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 908
+      "ms": 1050
     },
     {
       "id": "member-cannot-invite",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 470
+      "ms": 646
     },
     {
       "id": "non-member-blocked",
       "run": 1,
       "pass": true,
       "reason": null,
-      "ms": 417
+      "ms": 409
     }
   ]
 }

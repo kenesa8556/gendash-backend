@@ -1,5 +1,5 @@
 // src/query-engine/query-engine.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable,OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { METRICS, DIMENSIONS } from '../semantic/semantic';
@@ -7,7 +7,7 @@ import { Panel } from '../semantic/plan';
 
 
 @Injectable()
-export class QueryEngineService {
+export class QueryEngineService implements OnModuleDestroy {
   private pool: Pool;
 
   constructor(cfg: ConfigService) {
@@ -18,7 +18,9 @@ export class QueryEngineService {
       max: 5,
     });
   }
-
+  async onModuleDestroy() {
+    await this.pool.end();
+  }
   // "Now" for the demo = newest sale date, so results never change with the calendar
      private anchors = new Map<string, Date>();
 

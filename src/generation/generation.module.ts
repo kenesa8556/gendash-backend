@@ -5,10 +5,11 @@ import { QueryEngineModule } from '../query-engine/query-engine.module';
 import { ProvenanceModule } from '../provenance/provenance.module';
 import { UsageService } from "./usage.service"
 import { DashboardsModule } from '../dashboards/dashboards.module';
+import { RateLimitService } from './rate-limit.service';
 
 @Module({
   imports: [PlannerModule, QueryEngineModule, ProvenanceModule, DashboardsModule],
   controllers: [GenerationController],
-  providers : [UsageService]
+  providers : [UsageService, RateLimitService]
 })
 export class GenerationModule {}

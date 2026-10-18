@@ -8,10 +8,11 @@ import { QueryEngineModule } from './query-engine/query-engine.module';
 import { GenerationModule } from './generation/generation.module';
 import { ImportsModule } from './imports/imports.module';
 import { OrganizationsModule } from './organizations/organizations.module';
-import { MembersModule} from './members/members.module'
+import { MembersModule} from './members/members.module';
+import { validateEnv } from './config/env';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), 
+  imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     SupabaseModule,
     QueryEngineModule,
     ProvenanceModule,

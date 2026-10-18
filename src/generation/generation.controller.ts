@@ -1,5 +1,5 @@
 import {
-  BadRequestException, Body, Controller, HttpException, HttpStatus, Post, Res, UseGuards,
+  BadRequestException, Body, Controller, HttpException, HttpStatus, Post, Res, UseGuards,Req
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
@@ -14,6 +14,8 @@ import { SPEC_VERSION, SpecPanel } from '../semantic/spec';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { Org } from '../auth/org.decorator';
 import { OrgContextService } from '../organizations/org-context.service';
+import { RateLimitService } from './rate-limit.service';
+import { friendlyError } from '../common/errors';
 
 type Q = { id: string; panelId: string; sql: string; params: unknown[]; rows: unknown[] };
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -23,6 +25,7 @@ const UUID = /^[0-9a-f-]{36}$/i;
 export class GenerationController {
   constructor(
     private planner: PlannerService,
+    private rate: RateLimitService,
     private engine: QueryEngineService,
     private specBuilder: SpecBuilderService,
     private prov: ProvenanceService,
@@ -36,12 +39,15 @@ export class GenerationController {
     @Org() orgId: string,
     @Body() body: { question?: string; dashboardId?: string },
     @Res() res: Response,
+    @Req() req: any,
   ) {
     const question = body?.question;
     if (!question || typeof question !== 'string' || question.length > 300)
       throw new BadRequestException('question required, max 300 chars');
 
     let aborted = false;
+        if (!this.rate.allow(req.user.id, Number(this.cfg.get('USER_REQUESTS_PER_MINUTE') ?? 10)))
+      throw new HttpException('Too many requests. Please wait a moment and try again.', HttpStatus.TOO_MANY_REQUESTS);
     res.on('close', () => {
       if (!res.writableEnded) aborted = true; // client cancelled / disconnected
     });
@@ -116,7 +122,7 @@ export class GenerationController {
       }
     } catch (e) {
       console.error('generate failed', e);
-      send('error', { message: 'Could not build the dashboard. Please try again.' });
+            send('error', { message: friendlyError(e) });
     } finally {
       if (!res.writableEnded) res.end();
     }
