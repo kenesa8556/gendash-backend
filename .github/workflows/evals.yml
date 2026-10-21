@@ -1,0 +1,41 @@
+name: Evals (manual)
+on: workflow_dispatch
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: development
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+      TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+      TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+      TEST_ORG_ID: ${{ secrets.TEST_ORG_ID }}
+      TEST2_EMAIL: ${{ secrets.TEST2_EMAIL }}
+      TEST2_PASSWORD: ${{ secrets.TEST2_PASSWORD }}
+      EVAL_IMPORT_ORG_ID: ${{ secrets.EVAL_IMPORT_ORG_ID }}
+      EVAL_OTHER_ORG_ID: ${{ secrets.EVAL_OTHER_ORG_ID }}
+      USER_REQUESTS_PER_MINUTE: 100
+      DAILY_GENERATION_LIMIT: 500
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Start the backend
+        run: |
+          node dist/src/main.js &
+          curl --retry 30 --retry-delay 2 --retry-connrefused -sf http://localhost:3001/semantic > /dev/null
+      - run: npm run eval
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: evals/results.json
