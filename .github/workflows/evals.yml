@@ -31,7 +31,7 @@ jobs:
       - run: npm run build
       - name: Start the backend
         run: |
-          node dist/src/main.js &
+          node dist/main.js &
           curl --retry 30 --retry-delay 2 --retry-connrefused -sf http://localhost:3001/semantic > /dev/null
       - run: npm run eval
       - uses: actions/upload-artifact@v4
