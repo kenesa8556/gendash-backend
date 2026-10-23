@@ -1,98 +1,69 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# GenDash
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Ask your sales data a question in plain language and get a streamed dashboard. **The AI only plans and arranges; every number comes from SQL.** Click **Show data** on any panel to see the exact query and rows behind it.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**Live app:** <VERCEL_URL> · **API:** https://gendash-backend.onrender.com · **Frontend repo:** https://github.com/kenesa8556/gendash-frontend
 
-## Description
+> The free Render server sleeps when idle, so the first request can take about 30 s. The app shows a "waking up" message.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+![Dashboard](docs/screenshots/dashboard.png)
+![Show data: exact SQL and rows behind each number](docs/screenshots/show-data.png)
+![Import wizard with dry-run review](docs/screenshots/import-wizard.png)
 
-## Project setup
+## What it does
+- Shop owners sign up, create a shop (up to 3), and upload sales data (CSV or .xlsx) with a column-matching wizard and a dry-run review before import.
+- Ask "revenue by branch last quarter" or "best-selling dresses by month" and watch panels stream in.
+- Save, list, refine (versioned) and delete dashboards.
+- Invite teammates by email address (in-app Accept/Decline, no email sent), with owner/member roles.
+- Multi-tenant: every query is scoped to the active shop.
 
-```bash
-$ npm install
+## Trust model
+1. **The LLM never writes SQL or numbers.** Gemini returns a JSON *plan*, validated with Zod against a semantic layer (allowed metrics, dimensions, filters).
+2. **A query engine turns the plan into parameterized SQL** with a mandatory org filter and a per-org "now" anchor.
+3. **A spec builder** applies chart rules and flags partial months. The spec contains no numbers.
+4. **Provenance:** every panel's SQL and rows are saved (`query_log`) and shown via **Show data**.
+
+```
+question → Gemini planner (JSON, 25 s timeout, retry) → Zod validation
+        → query engine (parameterized SQL + org filter) → spec builder
+        → provenance (query_log) → SSE stream (POST /generate) → React renderer
 ```
 
-## Compile and run the project
+## Stack
+- **Backend:** NestJS, TypeScript, Zod v4, Supabase (Postgres, RLS, Auth), `pg` via Session pooler, `@google/genai`, exceljs, helmet. Hosted on Render.
+- **Frontend:** Next.js 16, Tailwind v4, Recharts, lucide-react. Hosted on Vercel.
 
+## Evals: how I know the numbers are right
+`npm run eval` runs 16 cases against a live backend, with expected values checked against hand-written SQL: totals, isolation between shops, imported CSV/xlsx totals, permission checks, unsupported or vague questions, refine keeping panels, and prompt-injection variants.
+
+- **16/16** on a single pass; **48/48** with `--repeat=3`.
+- **Break-it-on-purpose drills:**
+  - Multiplying revenue SQL by 1.1 dropped the suite to **9/16**, with the exact 1.1 factor visible.
+  - Removing the org filter dropped it to **8/16**, with the cross-shop leak cases failing.
+  - The drills exposed a blind spot (one case checked only the winner, not the displayed value), which I fixed.
+- The runner exits with an infrastructure error when the backend is unreachable, so an eval can't pass because the backend is down.
+
+Also: 34 unit tests (Jest, 5 suites) and GitHub Actions CI (build + test on push; manual eval workflow using repo secrets).
+
+## Hardening
+Zod env validation at startup, helmet, per-user rate limit, daily per-shop generation limit, friendly AI error messages, pg pool closed on shutdown, owner-only data endpoints, last-owner protection.
+
+## Run locally
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/kenesa8556/gendash-backend && cd gendash-backend
+npm ci
+cp .env.example .env   # fill in Supabase + Gemini keys
+npm run start:dev
+npm test
+npm run eval           # needs USER_REQUESTS_PER_MINUTE=100, DAILY_GENERATION_LIMIT=500
 ```
 
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Honest limits
+- **No email confirmation for the public:** Supabase's default email only reaches my own address; custom SMTP is needed before a real launch. Invitations trust the sign-up email.
+- **Rate limiter is in memory** (per instance, resets on restart).
+- **Gemini free quota** can run out; the app shows a friendly error.
+- **Free Render hosting sleeps;** a warm-up ping and "waking up" message mitigate this.
+- **Unsupported metrics:** the planner can't say "I can't compute profit"; it shows an honestly labelled metric instead.
+- **Auth adds ~2 s per request** (membership caching postponed).
+- **Dependencies:** `npm audit --omit=dev` reports a moderate `uuid` advisory via `exceljs`. The vulnerable path (caller-supplied buffer to uuid v3/v5/v6) isn't reachable from user input, and the only automated fix is a breaking downgrade of exceljs.
+- Privacy and terms pages are plain-language drafts, not legal advice. There's no in-app account deletion (done by email).
