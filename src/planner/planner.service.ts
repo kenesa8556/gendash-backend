@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import { METRICS, DIMENSIONS } from '../semantic/semantic';
 import { PlanSchema, Plan } from '../semantic/plan';
 import type { OrgContext } from '../organizations/org-context.service';
+import { observe, updateCurrentSpan } from '@traceroot-ai/traceroot';
 
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -67,16 +68,28 @@ Allowed filter op: eq | in`;
       : `<question>${question}</question>`;
     for (let attempt = 1; attempt <= 2; attempt++) {
       const contents = base + (lastError ? `\nYour previous answer was invalid: ${lastError}. Fix it.` : '');
-            const call = () =>
+                 const call = () =>
         withTimeout(
-          this.ai.models.generateContent({
-            model: this.model,
-            contents,
-            config: {
-              systemInstruction: this.systemPrompt(ctx),
-              responseMimeType: 'application/json',
-              temperature: 0.2,
-            },
+          observe({ name: 'gemini_plan', type: 'llm' }, async () => {
+            const r = await this.ai.models.generateContent({
+              model: this.model,
+              contents,
+              config: {
+                systemInstruction: this.systemPrompt(ctx),
+                responseMimeType: 'application/json',
+                temperature: 0.2,
+              },
+            });
+            updateCurrentSpan({
+              model: this.model,
+              input: { question, attempt },
+              output: r.text ?? '',
+              usage: {
+                input: r.usageMetadata?.promptTokenCount ?? 0,
+                output: r.usageMetadata?.candidatesTokenCount ?? 0,
+              },
+            });
+            return r;
           }),
           25_000,
         );

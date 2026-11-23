@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { METRICS, DIMENSIONS } from '../semantic/semantic';
 import { Panel } from '../semantic/plan';
+import { observe, updateCurrentSpan } from '@traceroot-ai/traceroot';
+import { TraceRoot } from '@traceroot-ai/traceroot';
 
 
 @Injectable()
@@ -20,6 +22,7 @@ export class QueryEngineService implements OnModuleDestroy {
   }
   async onModuleDestroy() {
     await this.pool.end();
+    await TraceRoot.shutdown();
   }
   // "Now" for the demo = newest sale date, so results never change with the calendar
      private anchors = new Map<string, Date>();
@@ -88,11 +91,11 @@ export class QueryEngineService implements OnModuleDestroy {
     return (await this.pool.query(sql, params)).rows;
   }
 
-  async run(orgId: string, panel: Panel) {
+    async run(orgId: string, panel: Panel) {
+    return observe({ name: 'run_sql', type: 'tool', captureOutput: false }, async () => {
       const anchor = await this.getAnchor(orgId);
       const { sql, params } = this.build(orgId, panel, anchor);
       const res = await this.pool.query(sql, params);
-      // an aggregate with no GROUP BY always returns one row, even when nothing matched
       const raw = panel.dimension
         ? res.rows
         : res.rows.filter((r) => Number(r._rows) > 0).map(({ _rows, ...rest }) => rest);
@@ -101,6 +104,8 @@ export class QueryEngineService implements OnModuleDestroy {
         for (const m of panel.metrics) out[m] = Number(r[m]);
         return out;
       });
+      updateCurrentSpan({ input: { sql }, output: { rowCount: rows.length } });
       return { sql, params, rowCount: rows.length, rows };
+    });
   }
 }
